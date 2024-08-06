@@ -208,7 +208,7 @@ fun LoginForm(navController: NavController) {
                         auth.signInWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
-                                    navController.navigate("main") // navigate to main screen
+                                    navController.navigate("map")
                                 } else {
                                     Toast.makeText(context, "Login failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                                     println("Login failed: ${task.exception?.message}")
