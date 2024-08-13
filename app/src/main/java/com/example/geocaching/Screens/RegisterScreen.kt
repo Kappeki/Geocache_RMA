@@ -82,6 +82,7 @@ fun RegisterForm(navController: NavController) {
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var passwordConfirmVisible by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
@@ -92,12 +93,16 @@ fun RegisterForm(navController: NavController) {
     var showSuccessMessage by remember { mutableStateOf(false) }
 
     val db = Firebase.firestore
-    val storage = Firebase.storage //cemu ovo sluzi?
+    val storage = Firebase.storage
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
-            photoUri = uri
+            if(uri == null) {
+                photoUri = Uri.parse("android.resource://com.example.geocaching/drawable/default_profile_picture")
+            } else {
+                photoUri = uri
+            }
         }
     )
 
@@ -215,13 +220,13 @@ fun RegisterForm(navController: NavController) {
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
                         label = { Text(text = "Confirm Password", color = Color(80, 141, 78)) },
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        visualTransformation = if (passwordConfirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
-                            val image = if (passwordVisible)
+                            val image = if (passwordConfirmVisible)
                                 Icons.Filled.Visibility
                             else Icons.Filled.VisibilityOff
 
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            IconButton(onClick = { passwordConfirmVisible = !passwordConfirmVisible }) {
                                 Icon(imageVector = image, "")
                             }
                         },
