@@ -13,7 +13,6 @@ fun NavGraph(navController: NavHostController) {
         composable(route = "register") { RegisterScreen(navController) }
         composable(route = "map") { MapScreen(navController) }
         composable(route = "profile") { ProfileScreen(navController) }
-        composable(route = "leaderboard") { LeaderboardScreen(navController)
-        Log.d("Leaderboard ekran", "Poruka")}
+        composable(route = "leaderboard") { LeaderboardScreen(navController) }
     }
 }

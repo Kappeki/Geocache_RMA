@@ -142,16 +142,6 @@ fun LoginForm(navController: NavController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .offset { IntOffset(emailOffsetX.value.toInt(), 0) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = if (emailError) Color.Red else Color(80, 141, 78),
-                    unfocusedTextColor = if (emailError) Color.Red else Color.Black,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedBorderColor = if (emailError) Color.Red else Color(80, 141, 78),
-                    unfocusedBorderColor = if (emailError) Color.Red else Color.Gray,
-                    focusedLabelColor = if (emailError) Color.Red else Color(80, 141, 78),
-                    unfocusedLabelColor = if (emailError) Color.Red else Color.Gray,
-                ),
                 isError = emailError,
                 singleLine = true
             )
@@ -176,16 +166,6 @@ fun LoginForm(navController: NavController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .offset { IntOffset(passwordOffsetX.value.toInt(), 0) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = if (passwordError) Color.Red else Color(80, 141, 78),
-                    unfocusedTextColor = if (passwordError) Color.Red else Color.Black,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedBorderColor = if (passwordError) Color.Red else Color(80, 141, 78),
-                    unfocusedBorderColor = if (passwordError) Color.Red else Color.Gray,
-                    focusedLabelColor = if (passwordError) Color.Red else Color(80, 141, 78),
-                    unfocusedLabelColor = if (passwordError) Color.Red else Color.Gray,
-                ),
                 isError = passwordError,
                 singleLine = true
             )
