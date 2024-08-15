@@ -3,6 +3,7 @@ package com.example.geocaching.Screens
 import android.widget.Toast
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -69,7 +70,7 @@ fun LoginScreen(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        LoginHeaderImage()
+        HeaderImage()
         LoginForm(navController = navController)
     }
 }
@@ -116,8 +117,9 @@ fun LoginForm(navController: NavController) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 15.dp)
-            .padding(top = 15.dp)
-            .padding(bottom = 250.dp),
+            .padding(bottom = 300.dp)
+            .offset(y = (-30).dp),
+        border = BorderStroke(0.6.dp, Color.Black),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 10.dp,
         )
@@ -213,16 +215,15 @@ fun LoginForm(navController: NavController) {
 }
 
 @Composable
-fun LoginHeaderImage() {
+fun HeaderImage() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp)
-            .background(Color(0xFF00796B)), // Darker green background
+            .height(130.dp),
         contentAlignment = Alignment.Center
     ) {
         Image(
-            painter = painterResource(id = R.drawable.ic_launcher_background), // Replace with your header image resource
+            painter = painterResource(id = R.drawable.money_background),
             contentDescription = "Header Image",
             contentScale = ContentScale.Crop,
             modifier = Modifier
@@ -230,6 +231,11 @@ fun LoginHeaderImage() {
                 .height(130.dp)
                 .clip(RoundedCornerShape(bottomStart = 30.dp, bottomEnd = 30.dp))
         )
-        Text(text = "GEOCACHING", fontFamily = FontFamily.Monospace, fontSize = 36.sp, color = Color.White)
+        Text(
+            text = "GEOCACHING",
+            fontFamily = FontFamily.Monospace,
+            fontSize = 48.sp,
+            color = Color.White
+        )
     }
 }

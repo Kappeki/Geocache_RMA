@@ -1,48 +1,21 @@
 package com.example.geocaching.Screens
 
 import android.net.Uri
-import android.os.CountDownTimer
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,20 +40,19 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.Timer
-import java.util.TimerTask
-import java.util.UUID
+import java.util.*
 
 @Composable
 fun RegisterScreen(navController: NavController) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ) {
-        RegisterHeaderImage()
-        RegisterForm(navController = navController)
+    Box {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            HeaderImage()
+            RegisterForm(navController = navController)
+        }
     }
 }
 
@@ -132,7 +104,6 @@ fun RegisterForm(navController: NavController) {
     val usernameOffsetX = remember { androidx.compose.animation.core.Animatable(0f) }
     val phoneNumberOffsetX = remember { androidx.compose.animation.core.Animatable(0f) }
 
-
     suspend fun shake(animatable: androidx.compose.animation.core.Animatable<Float, *>) {
         animatable.animateTo(
             targetValue = 10f,
@@ -154,16 +125,14 @@ fun RegisterForm(navController: NavController) {
 
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = Modifier
-            .fillMaxWidth()
             .padding(horizontal = 15.dp)
-            .padding(top = 15.dp)
-            .padding(bottom = 0.dp),
+            .fillMaxWidth()
+            .offset(y = (-30).dp),
+        border = BorderStroke(0.6.dp, Color.Black),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 10.dp,
+            defaultElevation = 10.dp
         )
     ) {
         Column(
@@ -174,40 +143,50 @@ fun RegisterForm(navController: NavController) {
         ) {
             if (loading) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
-                ){
+                ) {
                     CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(64.dp),
+                        modifier = Modifier.size(64.dp),
                         color = Color.Black
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(text = "Registering... Please wait", color = Color(80, 141, 78), fontWeight = FontWeight.Bold, fontSize = 26.sp)
+                    Text(
+                        text = "Registering... Please wait",
+                        color = Color(80, 141, 78),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 26.sp
+                    )
                 }
             } else {
-                if(showSuccessMessage) {
+                if (showSuccessMessage) {
                     LaunchedEffect(Unit) {
                         delay(3000L) // 3-second delay
                         navController.navigate("login")
                     }
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = "Registration successful!", color = Color(80, 141, 78), fontWeight = FontWeight.Bold, fontSize = 26.sp)
+                        Text(
+                            text = "Registration successful!",
+                            color = Color(80, 141, 78),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 26.sp
+                        )
                         Spacer(modifier = Modifier.height(25.dp))
-                        Text(text = "You are automatically being redirected!", color = Color(80, 141, 78))
+                        Text(
+                            text = "You are automatically being redirected!",
+                            color = Color(80, 141, 78)
+                        )
                     }
                 } else {
                     Spacer(modifier = Modifier.height(5.dp))
                     Text(text = "REGISTER", fontSize = 30.sp, color = Color(80, 141, 78))
                     Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField( // email input
+                    OutlinedTextField(
                         value = email,
                         onValueChange = {
                             email = it
@@ -222,7 +201,7 @@ fun RegisterForm(navController: NavController) {
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField( // username input
+                    OutlinedTextField(
                         value = username,
                         onValueChange = {
                             username = it
@@ -236,7 +215,7 @@ fun RegisterForm(navController: NavController) {
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField( // firstname input
+                    OutlinedTextField(
                         value = firstName,
                         onValueChange = {
                             firstName = it
@@ -250,7 +229,7 @@ fun RegisterForm(navController: NavController) {
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField( // lastname input
+                    OutlinedTextField(
                         value = lastName,
                         onValueChange = {
                             lastName = it
@@ -264,7 +243,7 @@ fun RegisterForm(navController: NavController) {
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField( // phone number input
+                    OutlinedTextField(
                         value = phoneNumber,
                         onValueChange = {
                             phoneNumber = it
@@ -278,7 +257,7 @@ fun RegisterForm(navController: NavController) {
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField( // password input
+                    OutlinedTextField(
                         value = password,
                         onValueChange = {
                             password = it
@@ -302,7 +281,7 @@ fun RegisterForm(navController: NavController) {
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField( // confirm password input
+                    OutlinedTextField(
                         value = confirmPassword,
                         onValueChange = {
                             confirmPassword = it
@@ -325,169 +304,210 @@ fun RegisterForm(navController: NavController) {
                         isError = passwordConfirmError,
                         singleLine = true
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Button(
-                        onClick = { imagePickerLauncher.launch("image/*") },
-                        modifier = Modifier
-                            .fillMaxWidth(0.5f)
-                            .height(50.dp),
-                        colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
-                        shape = RoundedCornerShape(25.dp)
-                    ) {
-                        Text(text = "Pick Profile Photo", color = Color.White)
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Button(
-                        onClick = {
-                            var isValid = true
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Row(
+                       modifier = Modifier
+                           .fillMaxWidth(),
+                    ){
+                        Button(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            modifier = Modifier
+                                .fillMaxWidth(0.5f)
+                                .height(50.dp),
+                            colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
+                            shape = RoundedCornerShape(25.dp)
+                        ) {
+                            Text(text = "Pick Profile Photo", color = Color.White)
+                        }
+                        Spacer(modifier = Modifier.width(20.dp))
+                        Button(
+                            onClick = {
+                                var isValid = true
 
-                            if (email.isBlank()) {
-                                emailError = true
-                                isValid = false
-                                coroutineScope.launch { shake(emailOffsetX) }
-                            }
-                            if (password.isBlank()) {
-                                passwordError = true
-                                isValid = false
-                                coroutineScope.launch { shake(passwordOffsetX) }
-                            }
-                            if (confirmPassword.isBlank()) {
-                                passwordConfirmError = true
-                                isValid = false
-                                coroutineScope.launch { shake(passwordConfirmOffsetX) }
-                            }
-                            if (username.isBlank()) {
-                                usernameError = true
-                                isValid = false
-                                coroutineScope.launch { shake(usernameOffsetX) }
-                            }
-                            if (firstName.isBlank()) {
-                                firstnameError = true
-                                isValid = false
-                                coroutineScope.launch { shake(firstnameOffsetX) }
-                            }
-                            if (lastName.isBlank()) {
-                                lastnameError = true
-                                isValid = false
-                                coroutineScope.launch { shake(lastnameOffsetX) }
-                            }
-                            if (phoneNumber.isBlank()) {
-                                phoneNumberError = true
-                                isValid = false
-                                coroutineScope.launch { shake(phoneNumberOffsetX) }
-                            }
-                            if (isValid) {
-                                if (password == confirmPassword) {
-                                    loading = true
+                                if (email.isBlank()) {
+                                    emailError = true
+                                    isValid = false
+                                    coroutineScope.launch { shake(emailOffsetX) }
+                                }
+                                if (password.isBlank()) {
+                                    passwordError = true
+                                    isValid = false
+                                    coroutineScope.launch { shake(passwordOffsetX) }
+                                }
+                                if (confirmPassword.isBlank()) {
+                                    passwordConfirmError = true
+                                    isValid = false
+                                    coroutineScope.launch { shake(passwordConfirmOffsetX) }
+                                }
+                                if (username.isBlank()) {
+                                    usernameError = true
+                                    isValid = false
+                                    coroutineScope.launch { shake(usernameOffsetX) }
+                                }
+                                if (firstName.isBlank()) {
+                                    firstnameError = true
+                                    isValid = false
+                                    coroutineScope.launch { shake(firstnameOffsetX) }
+                                }
+                                if (lastName.isBlank()) {
+                                    lastnameError = true
+                                    isValid = false
+                                    coroutineScope.launch { shake(lastnameOffsetX) }
+                                }
+                                if (phoneNumber.isBlank()) {
+                                    phoneNumberError = true
+                                    isValid = false
+                                    coroutineScope.launch { shake(phoneNumberOffsetX) }
+                                }
+                                if (isValid) {
+                                    if (password == confirmPassword) {
+                                        loading = true
 
-                                    // Set the default profile picture if none was selected
-                                    if (photoUri == null) {
-                                        photoUri = defaultProfilePictureUri
-                                    }
+                                        if (photoUri == null) {
+                                            photoUri = defaultProfilePictureUri
+                                        }
 
-                                    auth.createUserWithEmailAndPassword(email, password)
-                                        .addOnCompleteListener { task ->
-                                            if (task.isSuccessful) {
-                                                val user = auth.currentUser
-                                                val userId = user?.uid
+                                        auth.createUserWithEmailAndPassword(email, password)
+                                            .addOnCompleteListener { task ->
+                                                if (task.isSuccessful) {
+                                                    val user = auth.currentUser
+                                                    val userId = user?.uid
 
-                                                val profileData = hashMapOf(
-                                                    "username" to username,
-                                                    "firstName" to firstName,
-                                                    "lastName" to lastName,
-                                                    "phoneNumber" to phoneNumber,
-                                                    "email" to email,
-                                                    "points" to 0
-                                                )
+                                                    val profileData = hashMapOf(
+                                                        "username" to username,
+                                                        "firstName" to firstName,
+                                                        "lastName" to lastName,
+                                                        "phoneNumber" to phoneNumber,
+                                                        "email" to email,
+                                                        "points" to 0
+                                                    )
 
-                                                if (userId != null) {
-                                                    db.collection("users").document(userId).set(profileData)
-                                                        .addOnCompleteListener { profileTask ->
-                                                            if (profileTask.isSuccessful) {
-                                                                photoUri?.let { uri ->
-                                                                    val storageRef = storage.reference.child("profile_photos/${UUID.randomUUID()}.jpg")
-                                                                    storageRef.putFile(uri)
-                                                                        .addOnSuccessListener {
-                                                                            storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
-                                                                                db.collection("users").document(userId).update("photoUrl", downloadUrl.toString())
-                                                                                    .addOnSuccessListener {
-                                                                                        loading = false
-                                                                                        showSuccessMessage = true
-                                                                                    }
-                                                                                    .addOnFailureListener { exception ->
-                                                                                        loading = false
-                                                                                        Toast.makeText(context, "Photo URL save failed: ${exception.message}", Toast.LENGTH_LONG).show()
-                                                                                        Log.e("RegisterScreen", "Photo URL save failed", exception)
-                                                                                    }
+                                                    if (userId != null) {
+                                                        db.collection("users").document(userId)
+                                                            .set(profileData)
+                                                            .addOnCompleteListener { profileTask ->
+                                                                if (profileTask.isSuccessful) {
+                                                                    photoUri?.let { uri ->
+                                                                        val storageRef =
+                                                                            storage.reference.child(
+                                                                                "profile_photos/${UUID.randomUUID()}.jpg"
+                                                                            )
+                                                                        storageRef.putFile(uri)
+                                                                            .addOnSuccessListener {
+                                                                                storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+                                                                                    db.collection("users")
+                                                                                        .document(
+                                                                                            userId
+                                                                                        ).update(
+                                                                                        "photoUrl",
+                                                                                        downloadUrl.toString()
+                                                                                    )
+                                                                                        .addOnSuccessListener {
+                                                                                            loading =
+                                                                                                false
+                                                                                            showSuccessMessage =
+                                                                                                true
+                                                                                        }
+                                                                                        .addOnFailureListener { exception ->
+                                                                                            loading =
+                                                                                                false
+                                                                                            Toast.makeText(
+                                                                                                context,
+                                                                                                "Photo URL save failed: ${exception.message}",
+                                                                                                Toast.LENGTH_LONG
+                                                                                            ).show()
+                                                                                            Log.e(
+                                                                                                "RegisterScreen",
+                                                                                                "Photo URL save failed",
+                                                                                                exception
+                                                                                            )
+                                                                                        }
+                                                                                }
                                                                             }
-                                                                        }
-                                                                        .addOnFailureListener { exception ->
+                                                                            .addOnFailureListener { exception ->
+                                                                                loading = false
+                                                                                Toast.makeText(
+                                                                                    context,
+                                                                                    "Photo upload failed: ${exception.message}",
+                                                                                    Toast.LENGTH_LONG
+                                                                                ).show()
+                                                                                Log.e(
+                                                                                    "RegisterScreen",
+                                                                                    "Photo upload failed",
+                                                                                    exception
+                                                                                )
+                                                                            }
+                                                                    }
+                                                                        ?: run { /* ?: Used to handle null values for photoUri */
                                                                             loading = false
-                                                                            Toast.makeText(context, "Photo upload failed: ${exception.message}", Toast.LENGTH_LONG).show()
-                                                                            Log.e("RegisterScreen", "Photo upload failed", exception)
+                                                                            showSuccessMessage =
+                                                                                true
                                                                         }
-                                                                } ?: run { /* ?: Used to handle null values for photoUri */
+                                                                } else {
                                                                     loading = false
-                                                                    showSuccessMessage = true
+                                                                    val errorMessage =
+                                                                        profileTask.exception?.message
+                                                                            ?: "Unknown error"
+                                                                    Toast.makeText(
+                                                                        context,
+                                                                        "Profile save failed: $errorMessage",
+                                                                        Toast.LENGTH_LONG
+                                                                    ).show()
+                                                                    Log.e(
+                                                                        "RegisterScreen",
+                                                                        "Profile save failed",
+                                                                        profileTask.exception
+                                                                    )
                                                                 }
-                                                            } else {
-                                                                loading = false
-                                                                val errorMessage = profileTask.exception?.message ?: "Unknown error"
-                                                                Toast.makeText(context, "Profile save failed: $errorMessage", Toast.LENGTH_LONG).show()
-                                                                Log.e("RegisterScreen", "Profile save failed", profileTask.exception)
                                                             }
-                                                        }
+                                                    } else {
+                                                        loading = false
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Registration failed: User ID is null",
+                                                            Toast.LENGTH_LONG
+                                                        ).show()
+                                                    }
                                                 } else {
                                                     loading = false
-                                                    Toast.makeText(context, "Registration failed: User ID is null", Toast.LENGTH_LONG).show()
+                                                    val errorMessage =
+                                                        task.exception?.message ?: "Unknown error"
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Registration failed: $errorMessage",
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+                                                    Log.e(
+                                                        "RegisterScreen",
+                                                        "Registration failed",
+                                                        task.exception
+                                                    )
                                                 }
-                                            } else {
-                                                loading = false
-                                                val errorMessage = task.exception?.message ?: "Unknown error"
-                                                Toast.makeText(context, "Registration failed: $errorMessage", Toast.LENGTH_LONG).show()
-                                                Log.e("RegisterScreen", "Registration failed", task.exception)
                                             }
-                                        }
-                                } else {
-                                    Toast.makeText(context, "Passwords do not match", Toast.LENGTH_LONG).show()
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "Passwords do not match",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
                                 }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth(0.5f)
-                            .height(50.dp),
-                        colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
-                        shape = RoundedCornerShape(25.dp)
-                    ) {
-                        Text(text = "REGISTER", color = Color.White)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
+                            shape = RoundedCornerShape(25.dp)
+                        ) {
+                            Text(text = "REGISTER", color = Color.White)
+                        }
                     }
+                    Spacer(modifier = Modifier.height(5.dp))
                     TextButton(onClick = { navController.navigate("login") }) {
                         Text(text = "Already have an account? Log in", color = Color(80, 141, 78))
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun RegisterHeaderImage() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(70.dp)
-            .background(Color(0xFF00796B)), // Darker green background
-        contentAlignment = Alignment.Center
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.ic_launcher_background), // Replace with your header image resource
-            contentDescription = "Header Image",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(130.dp)
-                .clip(RoundedCornerShape(bottomStart = 30.dp, bottomEnd = 30.dp))
-        )
-        Text(text = "GEOCACHING", fontFamily = FontFamily.Monospace, fontSize = 36.sp, color = Color.White)
     }
 }
