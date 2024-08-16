@@ -39,12 +39,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
+import com.example.geocaching.R
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
@@ -75,35 +78,45 @@ fun LeaderboardScreen(navController: NavController) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(modifier = Modifier.height(20.dp))
-                Text(
-                    text = "Leaderboard", fontSize = 48.sp,
-                    fontWeight = FontWeight.Bold ,
-                    color = Color(80, 141, 78)
+            Box(modifier = Modifier.fillMaxSize()) {
+                Image(
+                    painter = painterResource(id = R.drawable.green_satelite_background),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
-                Spacer(modifier = Modifier.height(20.dp))
 
-                if (users.size >= 3) {
-                    // Display the top 3 users in a row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        users.take(3).forEachIndexed { index, user ->
-                            TopThreeUserCard(user = user, rank = index + 1)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Text(
+                        text = "Leaderboard", fontSize = 48.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        fontFamily = FontFamily.Monospace
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    if (users.size >= 3) {
+                        // Display the top 3 users in a row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            users.take(3).forEachIndexed { index, user ->
+                                TopThreeUserCard(user = user, rank = index + 1)
+                            }
                         }
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
 
-                LazyColumn {
-                    itemsIndexed(users.drop(3)) { index, user ->
-                        RegularUserCard(index = index + 4, user = user)
+                    LazyColumn {
+                        itemsIndexed(users.drop(3)) { index, user ->
+                            RegularUserCard(index = index + 4, user = user)
+                        }
                     }
                 }
             }
@@ -146,19 +159,22 @@ fun TopThreeUserCard(user: User, rank: Int) {
                 else -> ""
             },
             fontSize = 22.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = Color.White
         )
         Text(
             text = "${user.username}",
             fontWeight = FontWeight.Bold,
             fontSize = 20.sp,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            color = Color.White
         )
         Text(
             text = "${user.points} points",
             fontSize = 18.sp,
             fontWeight = FontWeight.Light,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            color = Color.White
         )
     }
 }
@@ -170,9 +186,9 @@ fun RegularUserCard(user: User, index: Int) {
             .fillMaxWidth()
             .padding(6.dp),
         shape = RoundedCornerShape(8.dp),
-//        colors = CardDefaults.cardColors(
-//            containerColor = Color(144, 238, 144)
-//        )
+        colors = CardDefaults.cardColors(
+            containerColor = Color(144, 238, 144)
+        )
     ) {
         Row(
             modifier = Modifier
