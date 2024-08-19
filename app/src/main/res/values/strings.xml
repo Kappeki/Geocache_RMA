@@ -3,4 +3,6 @@
     <string name="profile">Profile</string>
     <string name="map">Map</string>
     <string name="leaderboard">Leaderboard</string>
+    <string name="title_activity_maps">MapsActivity</string>
+    <string name="table">Table</string>
 </resources>

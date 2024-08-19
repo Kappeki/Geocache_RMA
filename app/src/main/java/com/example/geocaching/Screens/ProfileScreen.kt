@@ -1,6 +1,7 @@
 package com.example.geocaching.Screens
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -62,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
 import com.example.geocaching.R
+import com.example.geocaching.service.LocationService
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -373,6 +375,40 @@ fun ProfileScreen(navController: NavController) {
                         }
                     }
                     Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Button(
+                            onClick = {
+                                val intent = Intent(context, LocationService::class.java)
+                                context.startService(intent)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth(0.5f)
+                                .height(50.dp),
+                            colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
+                            shape = RoundedCornerShape(25.dp)
+                        ) {
+                            Text(text = "Start Service")
+                        }
+                        Spacer(modifier = Modifier.width(15.dp))
+                        Button(
+                            onClick = {
+                                val intent = Intent(context, LocationService::class.java)
+                                context.stopService(intent)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
+                            shape = RoundedCornerShape(25.dp)
+                        ) {
+                            Text(text = "Stop Service")
+                        }
+                    }
                     Row(modifier = Modifier
                         .padding(10.dp)
                         .fillMaxWidth(),

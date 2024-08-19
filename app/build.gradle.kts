@@ -39,6 +39,7 @@ android {
     }
     buildFeatures {
         compose = true
+        viewBinding = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -64,6 +65,7 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx:20.0.0")
     implementation("com.google.firebase:firebase-database-ktx:20.0.0") // Dodaj Firebase Database KTX zavisnost
     implementation("androidx.navigation:navigation-compose:2.4.0-beta02")
+    implementation(libs.androidx.constraintlayout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -72,17 +74,15 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    implementation("com.google.android.gms:play-services-maps:18.0.2")
-    implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("androidx.compose.material:material-icons-extended:<latest-version>")
     implementation("androidx.compose.material:material:1.6.8")
 
     implementation("androidx.appcompat:appcompat:1.4.0")
     implementation("com.google.android.material:material:1.4.0")
-    implementation("com.google.android.gms:play-services-maps:18.0.2")
-    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.2.0")
     implementation("com.google.accompanist:accompanist-permissions:0.21.0-beta")
-    implementation("com.google.maps.android:maps-compose:1.0.0")
+    implementation("com.google.maps.android:maps-compose:4.4.1")
 
     implementation ("io.coil-kt:coil-compose:2.1.0")
 }

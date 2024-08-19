@@ -14,5 +14,7 @@ fun NavGraph(navController: NavHostController) {
         composable(route = "map") { MapScreen(navController) }
         composable(route = "profile") { ProfileScreen(navController) }
         composable(route = "leaderboard") { LeaderboardScreen(navController) }
+        composable(route = "table") { ObjectsTableScreen(navController)}
+        composable(route = "add_object") { AddObjectScreen(navController) }
     }
 }

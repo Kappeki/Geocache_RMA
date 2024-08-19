@@ -20,6 +20,7 @@ fun BottomNavigationBar(navController: NavController) {
     val items = listOf(
         BottomNavItem.Profile,
         BottomNavItem.Map,
+        BottomNavItem.Table,
         BottomNavItem.Leaderboard
     )
 
@@ -59,5 +60,6 @@ fun BottomNavigationBar(navController: NavController) {
 sealed class BottomNavItem(@StringRes val title: Int, val route: String, @DrawableRes val icon: Int) {
     object Profile : BottomNavItem(R.string.profile, "profile", R.drawable.ic_profile)
     object Map : BottomNavItem(R.string.map, "map", R.drawable.ic_map)
+    object Table : BottomNavItem(R.string.table, "table", R.drawable.ic_table)
     object Leaderboard : BottomNavItem(R.string.leaderboard, "leaderboard", R.drawable.ic_leaderboard)
 }
