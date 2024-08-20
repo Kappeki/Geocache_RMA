@@ -60,6 +60,8 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.delay
 
+//TODO proveriti zasto nakon dodavanja objekta vraca na login i location service i notifikacije
+
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AddObjectScreen(navController: NavController) {
@@ -225,7 +227,7 @@ fun AddObjectScreen(navController: NavController) {
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Button( //add points when adding new object TODO
+                Button(
                     onClick = {
                         val currentUser = auth.currentUser
                         val userId = currentUser?.uid
@@ -346,18 +348,27 @@ fun saveObjectDataAndAddPoints(firestore: FirebaseFirestore, userId: String, obj
     firestore.collection("objects").document(objectId).set(objectData)
         .addOnSuccessListener {
             onComplete()
-            updateUserPoints(firestore, userId, 30, onComplete, onError)
+            updateUserPoints(firestore, userId, objectId,30, onComplete, onError)
         }
         .addOnFailureListener { e ->
             onError("Failed to save object data: ${e.message}")
         }
 }
 
-fun updateUserPoints(firestore: FirebaseFirestore, userId: String, pointsToAdd: Int, onComplete: () -> Unit, onError: (String) -> Unit
-) {
+fun updateUserPoints(firestore: FirebaseFirestore, userId: String, objectId: String, pointsToAdd: Int, onComplete: () -> Unit, onError: (String) -> Unit) {
     val userDocRef = firestore.collection("users").document(userId)
+
     firestore.runTransaction { transaction ->
         val snapshot = transaction.get(userDocRef)
+
+        val userActivities = snapshot.get("userActivities") as? MutableMap<String, MutableMap<String, Boolean>> ?: mutableMapOf()
+        val objectActivity = userActivities[objectId] ?: mutableMapOf()
+        objectActivity["logged"] = true
+        objectActivity["usedImageHint"] = true
+        objectActivity["usedTextHint"] = true
+        userActivities[objectId] = objectActivity
+        transaction.update(userDocRef, "userActivities", userActivities)
+
         val currentPoints = snapshot.getLong("points") ?: 0
         val newPoints = currentPoints + pointsToAdd
         transaction.update(userDocRef, "points", newPoints)

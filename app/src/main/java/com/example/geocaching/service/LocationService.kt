@@ -1,5 +1,6 @@
 package com.example.geocaching.service
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -13,6 +14,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.example.geocaching.MainActivity
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -24,6 +26,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import java.util.concurrent.ConcurrentHashMap
 import com.example.geocaching.R
+import com.google.firebase.firestore.GeoPoint
 
 class LocationService : Service() {
 
@@ -41,7 +44,6 @@ class LocationService : Service() {
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-                locationResult ?: return
                 for (location in locationResult.locations) {
                     Log.d("LocationService", "Location: $location")
                     updateLocation(location)
@@ -72,18 +74,23 @@ class LocationService : Service() {
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         }
 
-        if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) !=
-            PackageManager.PERMISSION_GRANTED && checkSelfPermission(
-                android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.d("LocationService", "Starting location updates")
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+        } else {
             Log.e("LocationService", "Location permission not granted")
-            return
         }
-        Log.d("LocationService", "Starting location updates")
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
     }
 
     private fun updateLocation(location: Location) {
-        val geoPoint = com.google.firebase.firestore.GeoPoint(location.latitude, location.longitude)
+        val geoPoint = GeoPoint(location.latitude, location.longitude)
         val userLocation = mapOf(
             "location" to geoPoint,
             "timestamp" to System.currentTimeMillis()
@@ -91,17 +98,15 @@ class LocationService : Service() {
         firestore.collection("user_locations").document("user_id").set(userLocation)
             .addOnSuccessListener {
                 Log.d("LocationService", "Location updated in Firestore")
-                 sendNotification("Location Update", "Location updated in Firestore: ${location.latitude}, ${location.longitude}")
+//                 sendNotification("Location Update", "Location updated in Firestore: ${location.latitude}, ${location.longitude}")
             }
             .addOnFailureListener { e ->
                 Log.e("LocationService", "Failed to update location in Firestore", e)
             }
 
-        // Check nearby objects
         checkNearbyObjects(location)
     }
 
-    //izmeniti
     private fun checkNearbyObjects(location: Location) {
         Log.d("LocationService", "Checking nearby objects for location: (${location.latitude}, ${location.longitude})")
 
@@ -118,7 +123,6 @@ class LocationService : Service() {
                     val description = data["description"] as? String
                     val difficulty = data["difficulty"].toString()
                     val terrain = data["terrain"].toString()
-//                    val rating = data?.get("rating").toString().toDoubleOrNull()
                     Log.d("LocationService", "Latitude: $lat, Longitude: $lon for document: ${document.id}")
                     if (lat != null && lon != null) {
                         val objectLocation = Location("").apply {
@@ -133,7 +137,7 @@ class LocationService : Service() {
                             val lastNotificationTime = lastNotificationTimes[document.id] ?: 0
                             /*ovde dole je ona provera od 20 minuta pre slanja notification za isti objekat*/
                             if (currentTime - lastNotificationTime > notificationInterval) {
-                                sendNotification("Object Nearby: $name", "Description: $description\nDifficulty: $difficulty\nTerrain: $terrain")
+                                sendNotification("Object Nearby: $name", "Difficulty: $difficulty\nTerrain: $terrain")
                                 lastNotificationTimes[document.id] = currentTime
                             }
                         }

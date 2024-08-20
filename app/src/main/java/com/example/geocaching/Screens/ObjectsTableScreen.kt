@@ -189,9 +189,13 @@ fun ObjectsTableScreen(navController: NavController) {
                                 if (isLogged) {
                                     Toast.makeText(context, "This cache has already been logged!", Toast.LENGTH_SHORT).show()
                                 } else {
-                                    markAsLogged(context, obj, "TableScreen")
+                                    markAsLogged(context, obj, "MapScreen") {
+                                        fetchMapObjects(firestore) { objects ->
+                                            mapObjects = objects
+                                        }
+                                        selectedObject = null
+                                    }
                                     Toast.makeText(context, "Cache logged successfully!", Toast.LENGTH_SHORT).show()
-                                    selectedObject = null
                                 }
                             },
                             onTextHintUsed = {

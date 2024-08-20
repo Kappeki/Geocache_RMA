@@ -242,10 +242,13 @@ fun MapScreen(navController: NavHostController) {
                     GoogleMap(
                         modifier = Modifier.fillMaxSize(),
                         cameraPositionState = cameraPositionState,
-                        properties = MapProperties(isMyLocationEnabled = locationPermissionState.hasPermission, mapType = MapType.NORMAL),
+                        properties = MapProperties(
+                            isMyLocationEnabled = locationPermissionState.hasPermission,
+                            mapType = MapType.NORMAL
+                        ),
                     ) {
                         val cachePin = resizeBitmap(context, R.drawable.cache, 100, 100)
-                        val foundPin = resizeBitmap(context, R.drawable.found, 100, 100)// Resize bitmap to desired size
+                        val foundPin = resizeBitmap(context, R.drawable.found, 100, 100)
 
                         val filteredObjects = mapObjects.filter {
                             val isNameMatch = filterName.isEmpty() || it.name.contains(filterName, ignoreCase = true)
@@ -270,13 +273,9 @@ fun MapScreen(navController: NavHostController) {
                         filteredObjects.forEach { obj ->
                             var markerIcon: Bitmap = cachePin
 
-                            // Check if the object is already logged
-                            var isLogged = false
-
                             LaunchedEffect(obj) {
                                 checkIfUserLogged(context, obj, "MapScreen") { logged ->
-                                    isLogged = logged
-                                    markerIcon = if (isLogged) foundPin else cachePin
+                                    markerIcon = if (logged) foundPin else cachePin
                                 }
                             }
 
@@ -319,9 +318,13 @@ fun MapScreen(navController: NavHostController) {
                                 if (isLogged) {
                                     Toast.makeText(context, "This cache has already been logged!", Toast.LENGTH_SHORT).show()
                                 } else {
-                                    markAsLogged(context, obj, "MapScreen")
+                                    markAsLogged(context, obj, "MapScreen") {
+                                        fetchMapObjects(firestore) { objects ->
+                                            mapObjects = objects
+                                        }
+                                        selectedObject = null
+                                    }
                                     Toast.makeText(context, "Cache logged successfully!", Toast.LENGTH_SHORT).show()
-                                    selectedObject = null
                                 }
                             },
                             onTextHintUsed = {
@@ -426,8 +429,7 @@ fun FilterSection(
     //on name change nam sluzi da filterName = it, tj da se u filter name stavi novo ime
     filterOwner: String, onOwnerChange: (String) -> Unit, filterDifficulty: Double, onDifficultyChange: (Double) -> Unit,
     filterTerrain: Double, onTerrainChange: (Double) -> Unit, filterStartDate: Long?, onStartDateChange: (Long?) -> Unit,
-    filterEndDate: Long?, onEndDateChange: (Long?) -> Unit, filterRadius: Float?, onRadiusChange: (Float?) -> Unit
-) {
+    filterEndDate: Long?, onEndDateChange: (Long?) -> Unit, filterRadius: Float?, onRadiusChange: (Float?) -> Unit) {
     val stepValues = listOf(1f, 1.5f, 2f, 2.5f, 3f, 3.5f, 4f, 4.5f, 5f)
 
     Column(modifier = Modifier.padding(8.dp)) {
@@ -582,7 +584,7 @@ fun TxtHintDialog(mapObject: MapObject, onDismissRequest: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
                 shape = RoundedCornerShape(25.dp)
             ) {
-                Text(text = "Got it!")
+                Text(text = "Got it!", color = Color.White)
             }
         }
     )
@@ -608,7 +610,7 @@ fun ImgHintDialog(mapObject: MapObject, onDismissRequest: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
                 shape = RoundedCornerShape(25.dp)
             ) {
-                Text(text = "Got it!")
+                Text(text = "Got it!", color = Color.White)
             }
         }
     )
@@ -630,8 +632,8 @@ fun ImgHintDialog(mapObject: MapObject, onDismissRequest: () -> Unit) {
 //}
 
 fun checkIfUserLogged(context: Context, mapObject: MapObject, screen: String, onResult: (Boolean) -> Unit) {
-    val firestore = FirebaseFirestore.getInstance()
-    val currentUser = FirebaseAuth.getInstance().currentUser
+    val firestore = Firebase.firestore
+    val currentUser = Firebase.auth.currentUser
 
     firestore.collection("users").document(currentUser?.uid ?: "").get()
         .addOnSuccessListener { document ->
@@ -646,43 +648,78 @@ fun checkIfUserLogged(context: Context, mapObject: MapObject, screen: String, on
         }
 }
 
-fun markAsLogged(context: Context, mapObject: MapObject, screen: String) {
-    val firestore = FirebaseFirestore.getInstance()
-    val currentUser = FirebaseAuth.getInstance().currentUser
+fun markAsLogged(context: Context, mapObject: MapObject, screen: String, onLogged: () -> Unit) {
+    val firestore = Firebase.firestore
+    val currentUser = Firebase.auth.currentUser
 
     currentUser?.let { user ->
         val objectId = mapObject.name.replace(" ", "_")
         firestore.collection("users").document(user.uid).get()
             .addOnSuccessListener { document ->
-                val userActivities = document.get("userActivities") as? Map<String, Boolean>
-                if (userActivities != null && userActivities.containsKey(objectId)) {
+                val userActivities = document.get("userActivities") as? Map<String, Any>
+                val hasLogged = userActivities?.get(objectId)?.let { it as Map<String, Boolean> }?.get("logged") ?: false
+                val usedTextHint = userActivities?.get(objectId)?.let { it as Map<String, Boolean> }?.get("usedTextHint") ?: false
+                val usedImageHint = userActivities?.get(objectId)?.let { it as Map<String, Boolean> }?.get("usedImageHint") ?: false
+                if (userActivities != null && hasLogged) {
                     Toast.makeText(context, "You have already logged this object.", Toast.LENGTH_SHORT).show()
                 } else {
                     firestore.collection("users").document(user.uid)
                         .update("userActivities.$objectId.logged", true)
                         .addOnSuccessListener {
                             Toast.makeText(context, "Logged successfully.", Toast.LENGTH_SHORT).show()
-                            addPoints("log")
+                            if (usedTextHint && usedImageHint) {
+                                addPoints("txtAndImgHints")
+                            } else if (usedTextHint) {
+                                addPoints("txtHint")
+                            } else if (usedImageHint) {
+                                addPoints("imgHint")
+                            } else {
+                                addPoints("noHints")
+                            }
+                            incrementLogNumber(mapObject, screen)
+                            onLogged
                         }
                         .addOnFailureListener { e ->
-                            Log.e("MapsScreen", "Error marking as logged", e)
+                            Log.e(screen, "Error marking as logged", e)
                         }
                 }
             }
             .addOnFailureListener { e ->
-                Log.e("MapsScreen", "Error fetching user data", e)
+                Log.e(screen, "Error fetching user data", e)
             }
     }
 }
 
-//postoji problem sa addPoints funkcijom - nije lepo implementirana
-//ne menja se ikonica markera kada je logged
-//obratiti paznju kada se loguje onda se dodaju poeni, ako se posle logovanja kliknu hintovi ne oduzimaju se poeni ili sta god, vec sve ostaje isto jer je vec logovao
-//kada se klikne prvo hint pa onda log onda se ne upise lepo u firestore, nece da se upise logged, ali hintovi hoce. Mada ako je prvo logged pa hintUsed onda hoce
-//takodje izmeniti kada je logged na true, ne dodaje se posle hintUsed na true
+fun incrementLogNumber(mapObject: MapObject, screen: String) {
+    val firestore = Firebase.firestore
+    val objectId = mapObject.name.replace(" ", "_")
+
+    objectId.let {
+        firestore.collection("objects").document(objectId).get()
+            .addOnSuccessListener { document ->
+                val numLogs = (document.getLong("number_logs") ?: 1) + 1
+
+                firestore.collection("objects").document(objectId)
+                    .update("number_logs", numLogs)
+                    .addOnSuccessListener {
+                        Log.d(screen, "Number of logs incremented successfully.")
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e(screen, "Error updating number of logs", e)
+                    }
+            }
+            .addOnFailureListener {e ->
+                Log.e(screen, "Error fetching user data", e)
+            }
+    }
+
+}
+//postoji problem sa addPoints funkcijom - nije lepo implementirana ✅
+//ne menja se ikonica markera kada je logged ✅
+//obratiti paznju kada se loguje onda se dodaju poeni, ako se posle logovanja kliknu hintovi ne oduzimaju se poeni ili sta god, vec sve ostaje isto jer je vec logovao ✅
+//kada se klikne prvo hint pa onda log onda se ne upise lepo u firestore, nece da se upise logged, ali hintovi hoce. Mada ako je prvo logged pa hintUsed onda hoce ✅
 //notifikacije
-//dugmici kod Image i Text Hint diajloga izgled
-//ne povecava se broj logovanja nakon uspesnog logovanja
+//ne povecava se broj logovanja nakon uspesnog logovanja ✅
 //proveriti servis
 
 fun markTextHintUsed(context: Context, mapObject: MapObject, screen: String) {
@@ -790,7 +827,7 @@ private fun resizeBitmap(context: Context, drawableRes: Int, width: Int, height:
     return Bitmap.createScaledBitmap(bitmap, width, height, false)
 }
 
-private fun addPoints(action: String) {
+fun addPoints(action: String) {
     val user = Firebase.auth.currentUser
     val userId = user?.uid ?: return
     val firestore = Firebase.firestore
