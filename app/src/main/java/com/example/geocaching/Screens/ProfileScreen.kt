@@ -599,8 +599,7 @@ fun updateProfilePicture(context: Context, userId: String, uri: Uri, firestore: 
         }
 }
 
-fun updateUserFieldInFirestore(context: Context, userId: String, fieldName: String, fieldValue: String
-) {
+fun updateUserFieldInFirestore(context: Context, userId: String, fieldName: String, fieldValue: String) {
     val firestore = Firebase.firestore
     val userRef = firestore.collection("users").document(userId)
 

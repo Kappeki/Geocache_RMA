@@ -91,14 +91,14 @@ class LocationService : Service() {
         firestore.collection("user_locations").document("user_id").set(userLocation)
             .addOnSuccessListener {
                 Log.d("LocationService", "Location updated in Firestore")
-                // sendNotification("Location Update", "Location updated in Firestore: ${location.latitude}, ${location.longitude}")
+                 sendNotification("Location Update", "Location updated in Firestore: ${location.latitude}, ${location.longitude}")
             }
             .addOnFailureListener { e ->
                 Log.e("LocationService", "Failed to update location in Firestore", e)
             }
 
         // Check nearby objects
-//        checkNearbyObjects(location)
+        checkNearbyObjects(location)
     }
 
     //izmeniti
@@ -112,11 +112,13 @@ class LocationService : Service() {
                 for (document in documents) {
                     Log.d("LocationService", "Document data: ${document.data}")
                     val data = document.data
-                    val lat = data?.get("latitude") as? Double
-                    val lon = data?.get("longitude") as? Double
-                    val name = data?.get("name") as? String
-                    val description = data?.get("description") as? String
-                    val rating = data?.get("rating").toString().toDoubleOrNull()
+                    val lat = data["latitude"] as? Double
+                    val lon = data["longitude"] as? Double
+                    val name = data["name"] as? String
+                    val description = data["description"] as? String
+                    val difficulty = data["difficulty"].toString()
+                    val terrain = data["terrain"].toString()
+//                    val rating = data?.get("rating").toString().toDoubleOrNull()
                     Log.d("LocationService", "Latitude: $lat, Longitude: $lon for document: ${document.id}")
                     if (lat != null && lon != null) {
                         val objectLocation = Location("").apply {
@@ -131,7 +133,7 @@ class LocationService : Service() {
                             val lastNotificationTime = lastNotificationTimes[document.id] ?: 0
                             /*ovde dole je ona provera od 20 minuta pre slanja notification za isti objekat*/
                             if (currentTime - lastNotificationTime > notificationInterval) {
-                                sendNotification("Object Nearby: $name", "Description: $description\nRating: $rating")
+                                sendNotification("Object Nearby: $name", "Description: $description\nDifficulty: $difficulty\nTerrain: $terrain")
                                 lastNotificationTimes[document.id] = currentTime
                             }
                         }
@@ -151,7 +153,7 @@ class LocationService : Service() {
         val notification = NotificationCompat.Builder(this, "location_channel")
             .setContentTitle(title)
             .setContentText(content)
-            .setSmallIcon(R.drawable.ic_map)
+            .setSmallIcon(R.drawable.default_profile_picture)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
@@ -177,7 +179,7 @@ class LocationService : Service() {
         return NotificationCompat.Builder(this, "location_channel")
             .setContentTitle("Location Service")
             .setContentText(content)
-            .setSmallIcon(R.drawable.ic_map)
+            .setSmallIcon(R.drawable.default_profile_picture)
 //            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingIntent)
             .build()

@@ -58,6 +58,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -119,8 +120,12 @@ fun AddObjectScreen(navController: NavController) {
                     text = "Adding geocache... Please wait",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 26.sp
+                    fontSize = 22.sp
                 )
+//                LaunchedEffect(Unit) {
+//                    delay(3000L) // 3-second delay
+//                    navController.popBackStack()
+//                }
             } else {
                 Text(
                     text = "Add Geocache",
@@ -223,7 +228,8 @@ fun AddObjectScreen(navController: NavController) {
                 Button( //add points when adding new object TODO
                     onClick = {
                         val currentUser = auth.currentUser
-                        if (currentUser != null && name.isNotEmpty() && description.isNotEmpty() && hint.isEmpty()) {
+                        val userId = currentUser?.uid
+                        if (currentUser != null && name.isNotEmpty() && description.isNotEmpty() && hint.isNotEmpty()) {
                             isLoading = true
                             val firestore = FirebaseFirestore.getInstance()
                             firestore.collection("users").document(currentUser.uid).get()
@@ -238,36 +244,24 @@ fun AddObjectScreen(navController: NavController) {
                                         hint = hint,
                                         imageUri = imageUri,
                                         username = username,
+                                        userId = userId!!,
                                         onComplete = {
                                             isLoading = false
-                                            Toast.makeText(
-                                                context,
-                                                "Object added successfully",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                            Toast.makeText(context, "Object added successfully", Toast.LENGTH_SHORT).show()
                                             navController.popBackStack()
                                         },
                                         onError = {
                                             isLoading = false
-                                            Toast.makeText(
-                                                context,
-                                                "Failed to add object: $it",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                            Toast.makeText(context, "Failed to add object: $it", Toast.LENGTH_SHORT).show()
                                         }
                                     )
                                 }
                                 .addOnFailureListener {
                                     isLoading = false
-                                    Toast.makeText(
-                                        context,
-                                        "Failed to retrieve user information",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    Toast.makeText(context, "Failed to retrieve user information", Toast.LENGTH_SHORT).show()
                                 }
                         } else {
-                            Toast.makeText(context, "All fields are required", Toast.LENGTH_SHORT)
-                                .show()
+                            Toast.makeText(context, "All fields are required", Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier
@@ -284,7 +278,7 @@ fun AddObjectScreen(navController: NavController) {
 }
 
 fun addObjectToFirestore(context: Context, name: String, description: String, difficulty: Double, terrain: Double, hint: String,
-    imageUri: String?, username: String, onComplete: () -> Unit, onError: (String) -> Unit) {
+    imageUri: String?, username: String, userId: String, onComplete: () -> Unit, onError: (String) -> Unit) {
     val firestore = FirebaseFirestore.getInstance()
     val storage = FirebaseStorage.getInstance()
     val locationProviderClient = LocationServices.getFusedLocationProviderClient(context)
@@ -332,13 +326,13 @@ fun addObjectToFirestore(context: Context, name: String, description: String, di
                     if (task.isSuccessful) {
                         val downloadUri = task.result
                         objectData["image_url"] = downloadUri.toString()
-                        saveObjectData(firestore, objectId, objectData, onComplete, onError)
+                        saveObjectDataAndAddPoints(firestore, userId, objectId, objectData, onComplete, onError)
                     } else {
                         onError("Failed to upload image")
                     }
                 }
             } else {
-                saveObjectData(firestore, objectId, objectData, onComplete, onError)
+                saveObjectDataAndAddPoints(firestore, userId, objectId, objectData, onComplete, onError)
             }
         } else {
             onError("Failed to get current location")
@@ -348,19 +342,20 @@ fun addObjectToFirestore(context: Context, name: String, description: String, di
     }
 }
 
-fun saveObjectData(firestore: FirebaseFirestore, objectId: String, objectData: Map<String, Any>, onComplete: () -> Unit, onError: (String) -> Unit) {
+fun saveObjectDataAndAddPoints(firestore: FirebaseFirestore, userId: String, objectId: String, objectData: Map<String, Any>, onComplete: () -> Unit, onError: (String) -> Unit) {
     firestore.collection("objects").document(objectId).set(objectData)
         .addOnSuccessListener {
             onComplete()
+            updateUserPoints(firestore, userId, 30, onComplete, onError)
         }
         .addOnFailureListener { e ->
             onError("Failed to save object data: ${e.message}")
         }
 }
 
-fun updateUserPoints(firestore: FirebaseFirestore, username: String, pointsToAdd: Int, onComplete: () -> Unit, onError: (String) -> Unit
+fun updateUserPoints(firestore: FirebaseFirestore, userId: String, pointsToAdd: Int, onComplete: () -> Unit, onError: (String) -> Unit
 ) {
-    val userDocRef = firestore.collection("users").document(username)
+    val userDocRef = firestore.collection("users").document(userId)
     firestore.runTransaction { transaction ->
         val snapshot = transaction.get(userDocRef)
         val currentPoints = snapshot.getLong("points") ?: 0
@@ -373,4 +368,4 @@ fun updateUserPoints(firestore: FirebaseFirestore, username: String, pointsToAdd
     .addOnFailureListener { e ->
         onError("Failed to update user points: ${e.message}")
     }
-} //izmena
+}

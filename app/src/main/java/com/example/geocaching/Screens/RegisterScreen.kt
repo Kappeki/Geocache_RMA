@@ -163,7 +163,7 @@ fun RegisterForm(navController: NavController) {
                 if (showSuccessMessage) {
                     LaunchedEffect(Unit) {
                         delay(3000L) // 3-second delay
-                        navController.navigate("login")
+                        navController.popBackStack()
                     }
                     Column(
                         modifier = Modifier.fillMaxSize(),

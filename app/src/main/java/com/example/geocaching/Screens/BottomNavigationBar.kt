@@ -39,7 +39,7 @@ fun BottomNavigationBar(navController: NavController) {
                 },
                 label = { Text(text = stringResource(id = item.title), fontSize = 10.sp, color = Color.Black) },
                 selected = currentRoute == item.route,
-                selectedContentColor = Color.Green, // Highlight the selected item in green
+                selectedContentColor = Color.Green,
                 unselectedContentColor = Color.Gray,
                 onClick = {
                     navController.navigate(item.route) {

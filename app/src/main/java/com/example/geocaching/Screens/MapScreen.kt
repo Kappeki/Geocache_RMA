@@ -106,18 +106,16 @@ data class MapObject(
     val timestamp: Long // created when
 )
 
-//didnt found - ne dobijas poene ili eventualno veoma malo poena za pokusaj
-//found - poeni se dobijaju na osnovu racunice koja ukljucuje difficulty, terrain i size
-// Mozda i ako je koristio hint onda se umanje poeni
+data class VisitInfo(
+    val visited: Boolean = false,
+    val usedTextHint: Boolean = false,
+    val usedImageHint: Boolean = false
+)
 
 //obican marker za nesto sto nije ni found ni not found
 //poseban marker za found
-//na pocetku moze da se odabere da li je found ili not found
-//posle toga sta se odabere od ta dva vise ne moze da se odabere, vec moze samo ovo suportno
 
-//postavis cache - dobijes poene (uvek isti broj poena)
-//logujes cache - dobijas poene u zavisnosti od toga kakav si cache logovao i na koji nacin
-//rangiranje na osnovu tih poena
+//Poeni -> Postavljanje kesa - 30, logiranje bez hintova - 20, sa txt hint - 15, sa img hint - 10, sa txt i img hint - 5
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -132,8 +130,7 @@ fun MapScreen(navController: NavHostController) {
     var selectedObject by remember { mutableStateOf<MapObject?>(null) }
     var showTxtHintDialog by remember { mutableStateOf(false) }
     var showImgHintDialog by remember { mutableStateOf(false) }
-//    var showAlreadyReviewedDialog by remember { mutableStateOf(false) }
-    var showAlreadyLoggedDialog by remember { mutableStateOf(false) } //already visited
+    var showAlreadyLoggedDialog by remember { mutableStateOf(false) }
     var currentUsername by remember { mutableStateOf("") }
     val firestore = Firebase.firestore
     var mapObjects by remember { mutableStateOf<List<MapObject>>(emptyList()) }
@@ -249,6 +246,7 @@ fun MapScreen(navController: NavHostController) {
                     ) {
                         val cachePin = resizeBitmap(context, R.drawable.cache, 100, 100)
                         val foundPin = resizeBitmap(context, R.drawable.found, 100, 100)// Resize bitmap to desired size
+
                         val filteredObjects = mapObjects.filter {
                             val isNameMatch = filterName.isEmpty() || it.name.contains(filterName, ignoreCase = true)
                             val isOwnerMatch = filterOwner.isEmpty() || it.owner.contains(filterOwner, ignoreCase = true)
@@ -267,14 +265,27 @@ fun MapScreen(navController: NavHostController) {
                             isNameMatch && isOwnerMatch && isDifficultyMatch && isTerrainMatch &&
                                     isStartDateMatch && isEndDateMatch && isRadiusMatch
                         }
+
                         //za svaki objekat unutar FilteredObjects stavljamo marker na mapi
                         filteredObjects.forEach { obj ->
+                            var markerIcon: Bitmap = cachePin
+
+                            // Check if the object is already logged
+                            var isLogged = false
+
+                            LaunchedEffect(obj) {
+                                checkIfUserLogged(context, obj, "MapScreen") { logged ->
+                                    isLogged = logged
+                                    markerIcon = if (isLogged) foundPin else cachePin
+                                }
+                            }
+
                             val markerState = rememberMarkerState(position = LatLng(obj.latitude, obj.longitude))
                             Marker(
                                 state = markerState,
                                 title = obj.name,
                                 snippet = obj.description,
-                                icon = BitmapDescriptorFactory.fromBitmap(cachePin),
+                                icon = BitmapDescriptorFactory.fromBitmap(markerIcon),
                                 onClick = {
                                     selectedObject = obj
                                     true
@@ -291,39 +302,71 @@ fun MapScreen(navController: NavHostController) {
                     }
 
                     //prikaz selektovanog objekta koji izaberemo na mapi
-//                    selectedObject?.let { obj ->
-//                        //ovo objectDetailsDialog je dole implementiran, ovo je konstruktor
-//                        CacheDetails(
-//                            mapObject = obj,
-//                            onDismissRequest = { selectedObject = null },
-//                            onVisit = {
-//                                checkIfUserVisited(context, obj) { visited ->
-//                                    if (visited) {
-//                                        showAlreadyVisitedDialog = true
-//                                    } else {
-//                                        markAsVisited(context, obj)
-//                                        addPoints("visit")
-//                                        Toast.makeText(context, "Marked as visited!", Toast.LENGTH_SHORT).show()
-//                                        selectedObject = null
-//                                    }
-//                                }
-//                            },
-//                            onAddReview = {
-//                                checkIfUserReviewed(obj, currentUsername) { reviewed ->
-//                                    if (reviewed) {
-//                                        showAlreadyReviewedDialog = true
-//                                    } else {
-//                                        showReviewDialog = true
-//                                    }
-//                                }
-//                            },
-//                            onViewReviews = { showReviewsDialog = true }
-//                        )
-//                    }
+                    selectedObject?.let { obj ->
+                        var isLogged by remember { mutableStateOf(false) }
+
+                        // Asynchronously check if the cache is logged
+                        LaunchedEffect(obj) {
+                            checkIfUserLogged(context, obj, "MapScreen") { logged ->
+                                isLogged = logged
+                            }
+                        }
+
+                        CacheDetails(
+                            mapObject = obj,
+                            onDismissRequest = { selectedObject = null },
+                            onLog = {
+                                if (isLogged) {
+                                    Toast.makeText(context, "This cache has already been logged!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    markAsLogged(context, obj, "MapScreen")
+                                    Toast.makeText(context, "Cache logged successfully!", Toast.LENGTH_SHORT).show()
+                                    selectedObject = null
+                                }
+                            },
+                            onTextHintUsed = {
+                                markTextHintUsed(context, obj, "MapScreen")
+                                showTxtHintDialog = true
+                                Toast.makeText(context, "Text hint used!", Toast.LENGTH_SHORT).show()
+                            },
+                            onImageHintUsed = {
+                                markImageHintUsed(context, obj, "MapScreen")
+                                showImgHintDialog = true
+                                Toast.makeText(context, "Image hint used!", Toast.LENGTH_SHORT).show()
+                            },
+                            isLogged = isLogged
+                        )
+
+                        if (showTxtHintDialog) {
+                            TxtHintDialog(mapObject = obj, onDismissRequest = { showTxtHintDialog = false })
+                        }
+
+                        if (showImgHintDialog) {
+                            ImgHintDialog(mapObject = obj, onDismissRequest = { showImgHintDialog = false })
+                        }
+                    }
+
+                    if (showAlreadyLoggedDialog) {
+                        AlreadyLoggedDialog(onDismissRequest = { showAlreadyLoggedDialog = false })
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+fun AlreadyLoggedDialog(onDismissRequest: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text("Already Logged") },
+        text = { Text("You have already logged this cache!") },
+        confirmButton = {
+            androidx.compose.material3.Button(onClick = onDismissRequest) {
+                Text("OK")
+            }
+        }
+    )
 }
 
 private fun distanceBetween(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Float {
@@ -381,12 +424,9 @@ fun FilterSection(
     //ovo on name change PROSLEDIMO kad pozivamo FilterSection, i to je ustvari callback funkcija, i uvek kad se promeni
     //name u filter, poziva se ova funkcija on name change, u nasem slucaju to se nalazi u 137. liniji koda,
     //on name change nam sluzi da filterName = it, tj da se u filter name stavi novo ime
-    filterOwner: String, onOwnerChange: (String) -> Unit,
-    filterDifficulty: Double, onDifficultyChange: (Double) -> Unit,
-    filterTerrain: Double, onTerrainChange: (Double) -> Unit,
-    filterStartDate: Long?, onStartDateChange: (Long?) -> Unit,
-    filterEndDate: Long?, onEndDateChange: (Long?) -> Unit,
-    filterRadius: Float?, onRadiusChange: (Float?) -> Unit
+    filterOwner: String, onOwnerChange: (String) -> Unit, filterDifficulty: Double, onDifficultyChange: (Double) -> Unit,
+    filterTerrain: Double, onTerrainChange: (Double) -> Unit, filterStartDate: Long?, onStartDateChange: (Long?) -> Unit,
+    filterEndDate: Long?, onEndDateChange: (Long?) -> Unit, filterRadius: Float?, onRadiusChange: (Float?) -> Unit
 ) {
     val stepValues = listOf(1f, 1.5f, 2f, 2.5f, 3f, 3.5f, 4f, 4.5f, 5f)
 
@@ -465,8 +505,7 @@ fun FilterSection(
 }
 
 @Composable
-fun CacheDetails(mapObject: MapObject, onDismissRequest: () -> Unit, onLog: () -> Unit, onAddReview: () -> Unit, onViewReviews: () -> Unit
-) {
+fun CacheDetails(mapObject: MapObject, onDismissRequest: () -> Unit, onLog: () -> Unit, onTextHintUsed: () -> Unit, onImageHintUsed: () -> Unit, isLogged: Boolean) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(mapObject.name) },
@@ -476,44 +515,53 @@ fun CacheDetails(mapObject: MapObject, onDismissRequest: () -> Unit, onLog: () -
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(text = "Description: ${mapObject.description}")
                 Spacer(modifier = Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "Difficulty: ${mapObject.difficulty}")
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(text = "Terrain: ${mapObject.terrain}")
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(text = "Logged: ${mapObject.numLogs} times")
-                }
+                Text(text = "Difficulty: ${mapObject.difficulty}")
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(text = "Terrain: ${mapObject.terrain}")
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(text = "Logged: ${mapObject.numLogs} times")
             }
         },
         confirmButton = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row {
                     Button(
-                        onClick = onLog, //onVisit
+                        onClick = {
+                            onTextHintUsed()
+                        },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 4.dp)
+                            .fillMaxWidth(0.5f)
+                            .padding(bottom = 4.dp),
+                        colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
+                        shape = RoundedCornerShape(25.dp)
                     ) {
-                        Text("Hint") //Mark as Visited
+                        Text("Text Hint", color = Color.White)
                     }
+                    Spacer(modifier = Modifier.width(10.dp))
                     Button(
-                        onClick = onAddReview,
+                        onClick = {
+                            onImageHintUsed()
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 4.dp)
+                            .padding(bottom = 4.dp),
+                        colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
+                        shape = RoundedCornerShape(25.dp)
                     ) {
-                        Text("Picture Hint") //Add Review
+                        Text("Picture Hint", color = Color.White)
                     }
                 }
+                Spacer(modifier = Modifier.height(10.dp))
                 Button(
-                    onClick = onLog,
-                    modifier = Modifier.fillMaxWidth()
+                    onClick = {
+                        onLog()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLogged,
+                    colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
+                    shape = RoundedCornerShape(25.dp)
                 ) {
-                    Text("Log Cache") //Reviews
+                    Text(if (isLogged) "Already Logged" else "Log Cache", color = Color.White)
                 }
             }
         }
@@ -524,12 +572,16 @@ fun CacheDetails(mapObject: MapObject, onDismissRequest: () -> Unit, onLog: () -
 fun TxtHintDialog(mapObject: MapObject, onDismissRequest: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("Hint for ${mapObject.name}") },
+        title = { Text(text = "Hint for ${mapObject.name}") },
         text = {
             Text(text = "${mapObject.hint}")
         },
         confirmButton = {
-            Button(onClick = onDismissRequest) {
+            Button(
+                onClick = onDismissRequest,
+                colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
+                shape = RoundedCornerShape(25.dp)
+            ) {
                 Text(text = "Got it!")
             }
         }
@@ -540,7 +592,7 @@ fun TxtHintDialog(mapObject: MapObject, onDismissRequest: () -> Unit) {
 fun ImgHintDialog(mapObject: MapObject, onDismissRequest: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("Picture hint for ${mapObject.name}") },
+        title = { Text(text = "Picture hint for ${mapObject.name}") },
         text = {
             Image(
                 painter = rememberImagePainter(mapObject.imageUrl),
@@ -551,14 +603,121 @@ fun ImgHintDialog(mapObject: MapObject, onDismissRequest: () -> Unit) {
             )
         },
         confirmButton = {
-            Button(onClick = onDismissRequest) {
+            Button(
+                onClick = onDismissRequest,
+                colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
+                shape = RoundedCornerShape(25.dp)
+            ) {
                 Text(text = "Got it!")
             }
         }
     )
 }
 
-//fali markAsLogged, markAsTxtHint, markAsImgHint jer mora da se zna da li je iskoristio hint i koje sve zbog poena
+//{
+//  "userActivities": {
+//    "objectId1": {
+//      "logged": true,
+//      "usedTextHint": false,
+//      "usedImageHint": true
+//    },
+//    "objectId2": {
+//      "logged": false,
+//      "usedTextHint": true,
+//      "usedImageHint": false
+//    }
+//  }
+//}
+
+fun checkIfUserLogged(context: Context, mapObject: MapObject, screen: String, onResult: (Boolean) -> Unit) {
+    val firestore = FirebaseFirestore.getInstance()
+    val currentUser = FirebaseAuth.getInstance().currentUser
+
+    firestore.collection("users").document(currentUser?.uid ?: "").get()
+        .addOnSuccessListener { document ->
+            val userActivities = document.get("userActivities") as? Map<String, Any>
+            val objectId = mapObject.name.replace(" ", "_")
+            val hasLogged = userActivities?.get(objectId)?.let { it as Map<String, Boolean> }?.get("logged") ?: false
+            onResult(hasLogged)
+        }
+        .addOnFailureListener { exception ->
+            Log.e(screen, "Error checking logged objects", exception)
+            onResult(false)
+        }
+}
+
+fun markAsLogged(context: Context, mapObject: MapObject, screen: String) {
+    val firestore = FirebaseFirestore.getInstance()
+    val currentUser = FirebaseAuth.getInstance().currentUser
+
+    currentUser?.let { user ->
+        val objectId = mapObject.name.replace(" ", "_")
+        firestore.collection("users").document(user.uid).get()
+            .addOnSuccessListener { document ->
+                val userActivities = document.get("userActivities") as? Map<String, Boolean>
+                if (userActivities != null && userActivities.containsKey(objectId)) {
+                    Toast.makeText(context, "You have already logged this object.", Toast.LENGTH_SHORT).show()
+                } else {
+                    firestore.collection("users").document(user.uid)
+                        .update("userActivities.$objectId.logged", true)
+                        .addOnSuccessListener {
+                            Toast.makeText(context, "Logged successfully.", Toast.LENGTH_SHORT).show()
+                            addPoints("log")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("MapsScreen", "Error marking as logged", e)
+                        }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("MapsScreen", "Error fetching user data", e)
+            }
+    }
+}
+
+//postoji problem sa addPoints funkcijom - nije lepo implementirana
+//ne menja se ikonica markera kada je logged
+//obratiti paznju kada se loguje onda se dodaju poeni, ako se posle logovanja kliknu hintovi ne oduzimaju se poeni ili sta god, vec sve ostaje isto jer je vec logovao
+//kada se klikne prvo hint pa onda log onda se ne upise lepo u firestore, nece da se upise logged, ali hintovi hoce. Mada ako je prvo logged pa hintUsed onda hoce
+//takodje izmeniti kada je logged na true, ne dodaje se posle hintUsed na true
+//notifikacije
+//dugmici kod Image i Text Hint diajloga izgled
+//ne povecava se broj logovanja nakon uspesnog logovanja
+//proveriti servis
+
+fun markTextHintUsed(context: Context, mapObject: MapObject, screen: String) {
+    val firestore = Firebase.firestore
+    val currentUser = Firebase.auth.currentUser
+
+    currentUser?.let { user ->
+        val objectId = mapObject.name.replace(" ", "_")
+        firestore.collection("users").document(user.uid)
+            .update("userActivities.$objectId.usedTextHint", true)
+            .addOnSuccessListener {
+                Log.d(screen, "Text Hint marked as used.")
+            }
+            .addOnFailureListener { e ->
+                Log.e(screen, "Error marking text hint as used", e)
+            }
+    }
+}
+
+fun markImageHintUsed(context: Context, mapObject: MapObject, screen: String) {
+    val firestore = Firebase.firestore
+    val currentUser = Firebase.auth.currentUser
+
+    currentUser?.let { user ->
+        val objectId = mapObject.name.replace(" ", "_")
+        firestore.collection("users").document(user.uid)
+            .update("userActivities.$objectId.usedImageHint", true)
+            .addOnSuccessListener {
+                Log.d(screen, "Image Hint marked as used.")
+            }
+            .addOnFailureListener { e ->
+                Log.e(screen, "Error marking image hint as used", e)
+            }
+    }
+}
 
 @Composable
 fun DatePicker(label: String, widthNumber: Float, selectedDate: Long?, onDateChange: (Long?) -> Unit) {

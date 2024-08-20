@@ -44,7 +44,6 @@ class MainActivity : ComponentActivity() {
             // Permissions granted
         }
     }
-
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
