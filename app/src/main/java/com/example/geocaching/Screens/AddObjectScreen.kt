@@ -60,8 +60,6 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.delay
 
-//TODO proveriti zasto nakon dodavanja objekta vraca na login i location service i notifikacije
-
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AddObjectScreen(navController: NavController) {
@@ -124,10 +122,6 @@ fun AddObjectScreen(navController: NavController) {
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp
                 )
-//                LaunchedEffect(Unit) {
-//                    delay(3000L) // 3-second delay
-//                    navController.popBackStack()
-//                }
             } else {
                 Text(
                     text = "Add Geocache",
@@ -250,7 +244,13 @@ fun AddObjectScreen(navController: NavController) {
                                         onComplete = {
                                             isLoading = false
                                             Toast.makeText(context, "Object added successfully", Toast.LENGTH_SHORT).show()
-                                            navController.popBackStack()
+                                            navController.navigate("map") {
+                                                popUpTo(navController.graph.startDestinationId) {
+                                                    inclusive = true
+                                                }
+                                                launchSingleTop = true
+                                            }
+
                                         },
                                         onError = {
                                             isLoading = false

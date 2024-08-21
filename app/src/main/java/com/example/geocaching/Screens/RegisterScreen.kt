@@ -503,7 +503,7 @@ fun RegisterForm(navController: NavController) {
                         }
                     }
                     Spacer(modifier = Modifier.height(5.dp))
-                    TextButton(onClick = { navController.navigate("login") } ) {
+                    TextButton(onClick = { navController.popBackStack() } ) {
                         Text(text = "Already have an account? Log in", color = Color(80, 141, 78))
                     }
                 }

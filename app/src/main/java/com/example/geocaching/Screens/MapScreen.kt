@@ -86,12 +86,13 @@ import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
-import com.google.maps.android.compose.rememberMarkerState
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
 
+//TODO ikonice za markere
 data class MapObject(
     val name: String,
     val description: String,
@@ -100,23 +101,12 @@ data class MapObject(
     val hint: String, //text kao hint
     val imageUrl: String, //image kao hint
     val owner: String,
-    val numLogs: Int,
+    var numLogs: Int,
     val latitude: Double,
     val longitude: Double,
     val timestamp: Long // created when
 )
-
-data class VisitInfo(
-    val visited: Boolean = false,
-    val usedTextHint: Boolean = false,
-    val usedImageHint: Boolean = false
-)
-
-//obican marker za nesto sto nije ni found ni not found
-//poseban marker za found
-
 //Poeni -> Postavljanje kesa - 30, logiranje bez hintova - 20, sa txt hint - 15, sa img hint - 10, sa txt i img hint - 5
-
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MapScreen(navController: NavHostController) {
@@ -236,6 +226,26 @@ fun MapScreen(navController: NavHostController) {
                         filterRadius = filterRadius,
                         onRadiusChange = { filterRadius = it }
                     )
+
+                    Button(
+                        onClick = {
+                            filterName = ""
+                            filterOwner = ""
+                            filterDifficulty = 1.0
+                            filterTerrain = 1.0
+                            filterStartDate = null
+                            filterEndDate = null
+                            filterRadius = null
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(Color(0xFF00796B)),
+                        shape = RoundedCornerShape(25.dp)
+                    ) {
+                        Text(text = "Reset Filters", color = Color.White)
+                    }
                 }
 
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -253,8 +263,8 @@ fun MapScreen(navController: NavHostController) {
                         val filteredObjects = mapObjects.filter {
                             val isNameMatch = filterName.isEmpty() || it.name.contains(filterName, ignoreCase = true)
                             val isOwnerMatch = filterOwner.isEmpty() || it.owner.contains(filterOwner, ignoreCase = true)
-                            val isDifficultyMatch = filterDifficulty == 0.0 || it.difficulty >= filterDifficulty
-                            val isTerrainMatch = filterTerrain == 0.0 || it.terrain >= filterTerrain
+                            val isDifficultyMatch = filterDifficulty == 1.0 || it.difficulty >= filterDifficulty
+                            val isTerrainMatch = filterTerrain == 1.0 || it.terrain >= filterTerrain
                             val isStartDateMatch = filterStartDate == null || it.timestamp >= filterStartDate!!
                             val isEndDateMatch = filterEndDate == null || it.timestamp <= filterEndDate!!
                             val isRadiusMatch = filterRadius == null || (currentLocation != null && distanceBetween(
@@ -265,8 +275,7 @@ fun MapScreen(navController: NavHostController) {
                                 //ovaj isRadiusMatch ce biti true ili ako je filterRadius null, ili ako je distanceBetween<= filter radius,
                                 //tj ako smo u tom radiusu
                             ) <= filterRadius!!)
-                            isNameMatch && isOwnerMatch && isDifficultyMatch && isTerrainMatch &&
-                                    isStartDateMatch && isEndDateMatch && isRadiusMatch
+                            isNameMatch && isOwnerMatch && isDifficultyMatch && isTerrainMatch && isStartDateMatch && isEndDateMatch && isRadiusMatch
                         }
 
                         //za svaki objekat unutar FilteredObjects stavljamo marker na mapi
@@ -279,9 +288,8 @@ fun MapScreen(navController: NavHostController) {
                                 }
                             }
 
-                            val markerState = rememberMarkerState(position = LatLng(obj.latitude, obj.longitude))
                             Marker(
-                                state = markerState,
+                                position = LatLng(obj.latitude, obj.longitude),
                                 title = obj.name,
                                 snippet = obj.description,
                                 icon = BitmapDescriptorFactory.fromBitmap(markerIcon),
@@ -304,7 +312,6 @@ fun MapScreen(navController: NavHostController) {
                     selectedObject?.let { obj ->
                         var isLogged by remember { mutableStateOf(false) }
 
-                        // Asynchronously check if the cache is logged
                         LaunchedEffect(obj) {
                             checkIfUserLogged(context, obj, "MapScreen") { logged ->
                                 isLogged = logged
@@ -430,29 +437,43 @@ fun FilterSection(
     filterOwner: String, onOwnerChange: (String) -> Unit, filterDifficulty: Double, onDifficultyChange: (Double) -> Unit,
     filterTerrain: Double, onTerrainChange: (Double) -> Unit, filterStartDate: Long?, onStartDateChange: (Long?) -> Unit,
     filterEndDate: Long?, onEndDateChange: (Long?) -> Unit, filterRadius: Float?, onRadiusChange: (Float?) -> Unit) {
+
     val stepValues = listOf(1f, 1.5f, 2f, 2.5f, 3f, 3.5f, 4f, 4.5f, 5f)
 
     Column(modifier = Modifier.padding(8.dp)) {
         OutlinedTextField(
             value = filterName,
             onValueChange = onNameChange,
-            label = { Text("Filter by Name") },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Filter by Name", color = Color(80, 141, 78)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = filterOwner,
-            onValueChange = onOwnerChange,
-            label = { Text("Filter by Owner") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Filter by Difficulty: ${if (filterDifficulty > 1) filterDifficulty else "Any"}")
+        Spacer(modifier = Modifier.height(10.dp))
+        Row {
+            OutlinedTextField(
+                value = filterRadius?.toString() ?: "",
+                onValueChange = { onRadiusChange(it.toFloatOrNull()) },
+                label = { Text("Filter by Radius (in m)", color = Color(80, 141, 78)) },
+                modifier = Modifier.fillMaxWidth(0.5f),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            OutlinedTextField(
+                value = filterOwner,
+                onValueChange = onOwnerChange,
+                label = { Text("Filter by Owner", color = Color(80, 141, 78)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        Text("Filter by Difficulty: $filterDifficulty", color = Color(80, 141, 78))
         Slider(
             value = filterDifficulty.toFloat(),
             onValueChange = { value ->
-                val closestValue = stepValues.minByOrNull { kotlin.math.abs(it - value) } ?: value
-                onDifficultyChange(closestValue.toDouble()) },
+                val closestValue = stepValues.minByOrNull { abs(it - value) } ?: value
+                onDifficultyChange(closestValue.toDouble())
+            },
             valueRange = 1f..5f,
             steps = stepValues.size - 2,
             modifier = Modifier.fillMaxWidth(),
@@ -463,13 +484,14 @@ fun FilterSection(
                 inactiveTickColor = Color(0xFF00796B)
             )
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Filter by Terrain: ${if (filterTerrain > 1) filterTerrain else "Any"}")
+        Spacer(modifier = Modifier.width(10.dp))
+        Text("Filter by Terrain: $filterTerrain", color = Color(80, 141, 78))
         Slider(
             value = filterTerrain.toFloat(),
             onValueChange = { value ->
-                val closestValue = stepValues.minByOrNull { kotlin.math.abs(it - value) } ?: value
-                onTerrainChange(closestValue.toDouble()) },
+                val closestValue = stepValues.minByOrNull { abs(it - value) } ?: value
+                onTerrainChange(closestValue.toDouble())
+            },
             valueRange = 1f..5f,
             steps = stepValues.size - 2,
             modifier = Modifier.fillMaxWidth(),
@@ -480,7 +502,7 @@ fun FilterSection(
                 inactiveTickColor = Color(0xFF00796B)
             )
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
         Row {
             DatePicker(
                 label = "Start Date",
@@ -488,7 +510,7 @@ fun FilterSection(
                 selectedDate = filterStartDate,
                 onDateChange = onStartDateChange
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(10.dp))
             DatePicker(
                 label = "End Date",
                 widthNumber = 1f,
@@ -496,18 +518,13 @@ fun FilterSection(
                 onDateChange = onEndDateChange
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = filterRadius?.toString() ?: "",
-            onValueChange = { onRadiusChange(it.toFloatOrNull()) },
-            label = { Text("Filter by Radius (meters)") },
-            modifier = Modifier.fillMaxWidth()
-        )
     }
 }
 
 @Composable
 fun CacheDetails(mapObject: MapObject, onDismissRequest: () -> Unit, onLog: () -> Unit, onTextHintUsed: () -> Unit, onImageHintUsed: () -> Unit, isLogged: Boolean) {
+    var numLogs by remember { mutableStateOf(mapObject.numLogs) }
+
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(mapObject.name) },
@@ -521,7 +538,7 @@ fun CacheDetails(mapObject: MapObject, onDismissRequest: () -> Unit, onLog: () -
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(text = "Terrain: ${mapObject.terrain}")
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(text = "Logged: ${mapObject.numLogs} times")
+                Text(text = "Logged: $numLogs times")
             }
         },
         confirmButton = {
@@ -660,12 +677,15 @@ fun markAsLogged(context: Context, mapObject: MapObject, screen: String, onLogge
                 val hasLogged = userActivities?.get(objectId)?.let { it as Map<String, Boolean> }?.get("logged") ?: false
                 val usedTextHint = userActivities?.get(objectId)?.let { it as Map<String, Boolean> }?.get("usedTextHint") ?: false
                 val usedImageHint = userActivities?.get(objectId)?.let { it as Map<String, Boolean> }?.get("usedImageHint") ?: false
-                if (userActivities != null && hasLogged) {
+                if (hasLogged) {
                     Toast.makeText(context, "You have already logged this object.", Toast.LENGTH_SHORT).show()
                 } else {
                     firestore.collection("users").document(user.uid)
                         .update("userActivities.$objectId.logged", true)
                         .addOnSuccessListener {
+                            incrementLogNumber(mapObject, screen)
+                            onLogged()
+
                             Toast.makeText(context, "Logged successfully.", Toast.LENGTH_SHORT).show()
                             if (usedTextHint && usedImageHint) {
                                 addPoints("txtAndImgHints")
@@ -676,8 +696,6 @@ fun markAsLogged(context: Context, mapObject: MapObject, screen: String, onLogge
                             } else {
                                 addPoints("noHints")
                             }
-                            incrementLogNumber(mapObject, screen)
-                            onLogged
                         }
                         .addOnFailureListener { e ->
                             Log.e(screen, "Error marking as logged", e)
@@ -714,13 +732,6 @@ fun incrementLogNumber(mapObject: MapObject, screen: String) {
     }
 
 }
-//postoji problem sa addPoints funkcijom - nije lepo implementirana ✅
-//ne menja se ikonica markera kada je logged ✅
-//obratiti paznju kada se loguje onda se dodaju poeni, ako se posle logovanja kliknu hintovi ne oduzimaju se poeni ili sta god, vec sve ostaje isto jer je vec logovao ✅
-//kada se klikne prvo hint pa onda log onda se ne upise lepo u firestore, nece da se upise logged, ali hintovi hoce. Mada ako je prvo logged pa hintUsed onda hoce ✅
-//notifikacije
-//ne povecava se broj logovanja nakon uspesnog logovanja ✅
-//proveriti servis
 
 fun markTextHintUsed(context: Context, mapObject: MapObject, screen: String) {
     val firestore = Firebase.firestore

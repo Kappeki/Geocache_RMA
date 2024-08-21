@@ -421,6 +421,8 @@ fun ProfileScreen(navController: NavController) {
                                     popUpTo(navController.graph.startDestinationId) {
                                         inclusive = true
                                     }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
                             },
                             modifier = Modifier

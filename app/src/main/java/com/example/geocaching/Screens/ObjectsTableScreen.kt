@@ -175,7 +175,6 @@ fun ObjectsTableScreen(navController: NavController) {
                     selectedObject?.let { obj ->
                         var isLogged by remember { mutableStateOf(false) }
 
-                        // Asynchronously check if the cache is logged
                         LaunchedEffect(obj) {
                             checkIfUserLogged(context, obj, "TableScreen") { logged ->
                                 isLogged = logged

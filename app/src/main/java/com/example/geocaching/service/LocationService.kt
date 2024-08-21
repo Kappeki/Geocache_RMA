@@ -46,7 +46,8 @@ class LocationService : Service() {
             override fun onLocationResult(locationResult: LocationResult) {
                 for (location in locationResult.locations) {
                     Log.d("LocationService", "Location: $location")
-                    updateLocation(location)
+//                    updateLocation(location)
+                    checkNearbyObjects(location)
                 }
             }
         }
@@ -89,23 +90,23 @@ class LocationService : Service() {
         }
     }
 
-    private fun updateLocation(location: Location) {
-        val geoPoint = GeoPoint(location.latitude, location.longitude)
-        val userLocation = mapOf(
-            "location" to geoPoint,
-            "timestamp" to System.currentTimeMillis()
-        )
-        firestore.collection("user_locations").document("user_id").set(userLocation)
-            .addOnSuccessListener {
-                Log.d("LocationService", "Location updated in Firestore")
-//                 sendNotification("Location Update", "Location updated in Firestore: ${location.latitude}, ${location.longitude}")
-            }
-            .addOnFailureListener { e ->
-                Log.e("LocationService", "Failed to update location in Firestore", e)
-            }
-
-        checkNearbyObjects(location)
-    }
+//    private fun updateLocation(location: Location) {
+//        val geoPoint = GeoPoint(location.latitude, location.longitude)
+//        val userLocation = mapOf(
+//            "location" to geoPoint,
+//            "timestamp" to System.currentTimeMillis()
+//        )
+//        firestore.collection("user_locations").document("user_id").set(userLocation)
+//            .addOnSuccessListener {
+//                Log.d("LocationService", "Location updated in Firestore")
+////                 sendNotification("Location Update", "Location updated in Firestore: ${location.latitude}, ${location.longitude}")
+//            }
+//            .addOnFailureListener { e ->
+//                Log.e("LocationService", "Failed to update location in Firestore", e)
+//            }
+//
+//        checkNearbyObjects(location)
+//    }
 
     private fun checkNearbyObjects(location: Location) {
         Log.d("LocationService", "Checking nearby objects for location: (${location.latitude}, ${location.longitude})")
@@ -120,7 +121,6 @@ class LocationService : Service() {
                     val lat = data["latitude"] as? Double
                     val lon = data["longitude"] as? Double
                     val name = data["name"] as? String
-                    val description = data["description"] as? String
                     val difficulty = data["difficulty"].toString()
                     val terrain = data["terrain"].toString()
                     Log.d("LocationService", "Latitude: $lat, Longitude: $lon for document: ${document.id}")
@@ -157,7 +157,7 @@ class LocationService : Service() {
         val notification = NotificationCompat.Builder(this, "location_channel")
             .setContentTitle(title)
             .setContentText(content)
-            .setSmallIcon(R.drawable.default_profile_picture)
+            .setSmallIcon(R.drawable.ic_pin_drop)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
@@ -183,8 +183,7 @@ class LocationService : Service() {
         return NotificationCompat.Builder(this, "location_channel")
             .setContentTitle("Location Service")
             .setContentText(content)
-            .setSmallIcon(R.drawable.default_profile_picture)
-//            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_pin_drop)
             .setContentIntent(pendingIntent)
             .build()
     }
