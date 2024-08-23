@@ -190,7 +190,9 @@ fun LoginForm(navController: NavController) {
                         auth.signInWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
-                                    navController.navigate("map")
+                                    navController.navigate("map") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
                                 } else {
                                     Toast.makeText(context, "Login failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                                     println("Login failed: ${task.exception?.message}")

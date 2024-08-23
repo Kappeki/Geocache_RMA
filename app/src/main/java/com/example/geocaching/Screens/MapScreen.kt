@@ -45,6 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -92,7 +93,6 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
-//TODO ikonice za markere
 data class MapObject(
     val name: String,
     val description: String,
@@ -124,6 +124,7 @@ fun MapScreen(navController: NavHostController) {
     var currentUsername by remember { mutableStateOf("") }
     val firestore = Firebase.firestore
     var mapObjects by remember { mutableStateOf<List<MapObject>>(emptyList()) }
+    val markerIcons = remember { mutableStateMapOf<String, Bitmap>() }
 
     val currentUser = Firebase.auth.currentUser
 
@@ -280,11 +281,14 @@ fun MapScreen(navController: NavHostController) {
 
                         //za svaki objekat unutar FilteredObjects stavljamo marker na mapi
                         filteredObjects.forEach { obj ->
-                            var markerIcon: Bitmap = cachePin
+                            val cacheName = obj.name
 
                             LaunchedEffect(obj) {
-                                checkIfUserLogged(context, obj, "MapScreen") { logged ->
-                                    markerIcon = if (logged) foundPin else cachePin
+                                if (!markerIcons.containsKey(cacheName)) {
+                                    checkIfUserLogged(context, obj, "MapScreen") { logged ->
+                                        val icon = if (logged) foundPin else cachePin
+                                        markerIcons[cacheName] = icon
+                                    }
                                 }
                             }
 
@@ -292,7 +296,7 @@ fun MapScreen(navController: NavHostController) {
                                 position = LatLng(obj.latitude, obj.longitude),
                                 title = obj.name,
                                 snippet = obj.description,
-                                icon = BitmapDescriptorFactory.fromBitmap(markerIcon),
+                                icon = BitmapDescriptorFactory.fromBitmap(markerIcons[cacheName] ?: cachePin),
                                 onClick = {
                                     selectedObject = obj
                                     true
